@@ -1,5 +1,5 @@
 {
-  "name": "node-postgres",
+  "name": "twitter-clone-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
