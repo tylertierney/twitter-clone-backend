@@ -41,8 +41,14 @@ users.get("/:username", (req, res, next) => {
   });
 });
 
-users.get("/:username/:header_pic", (req, res) => {
+users.get("/:username/header_pic/:header_pic", (req, res) => {
   const key = req.params.header_pic;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
+
+users.get("/:username/profile_pic/:profile_pic", (req, res) => {
+  const key = req.params.profile_pic;
   const readStream = getFileStream(key);
   readStream.pipe(res);
 });
@@ -100,5 +106,33 @@ users.put(
     }
   }
 );
+
+users.get("/:user_id/following", (req, res) => {
+  const text = `
+  SELECT COUNT(*)
+  FROM user_following
+  WHERE user_id=$1;`;
+
+  query(text, [req.params.user_id], (error, result) => {
+    if (error) return res.json(error);
+    if (!result.rows.length || !result.rows[0].count)
+      return res.status(400).json("Something went wrong");
+    res.send(result.rows[0].count);
+  });
+});
+
+users.get("/:user_id/followers", (req, res) => {
+  const text = `
+  SELECT COUNT(*)
+  FROM user_following
+  WHERE following_id=$1;`;
+
+  query(text, [req.params.user_id], (error, result) => {
+    if (error) return res.json(error);
+    if (!result.rows.length || !result.rows[0].count)
+      return res.status(400).json("Something went wrong");
+    res.send(result.rows[0].count);
+  });
+});
 
 export default users;

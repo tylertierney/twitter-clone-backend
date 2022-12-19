@@ -39,13 +39,13 @@ like.post("/:post_id/:user_id", (req, res) => {
   });
 });
 
-like.get("/", (req, res) => {
-  const text = "SELECT * FROM likes;";
+// like.get("/", (req, res) => {
+//   const text = "SELECT * FROM likes;";
 
-  query(text, [], (err, result) => {
-    res.send(result.rows);
-  });
-});
+//   query(text, [], (err, result) => {
+//     res.send(result.rows);
+//   });
+// });
 
 like.get("/:post_id/:user_id", (req, res) => {
   console.log("get called");
@@ -62,10 +62,6 @@ like.get("/:post_id/:user_id", (req, res) => {
     }
     return res.json(false);
   });
-});
-
-like.get("/hi", (req, res) => {
-  res.json("hi");
 });
 
 like.get("/:post_id/count", (req, res) => {

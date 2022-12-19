@@ -86,4 +86,17 @@ posts.post("/", (req, res) => {
   });
 });
 
+posts.get("/:post_id/likes", (req, res) => {
+  const text = `
+  SELECT COUNT(*)
+  FROM likes
+  WHERE post_id=$1`;
+
+  query(text, [req.params.post_id], (error, result) => {
+    if (error) return res.status(400).json(error);
+    if (!result.rows.length || !result.rows[0].count) return res.json(error);
+    res.send(result.rows[0].count);
+  });
+});
+
 export default posts;
