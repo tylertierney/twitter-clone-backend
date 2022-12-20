@@ -57,13 +57,15 @@ auth.post("/register", (req, res) => {
         if (error) {
           return res.json(error);
         }
-        const token = jwt.sign({ id: result.rows[0] }, "jwtkey");
+        if (!result.rows.length) return res.json("Something went wrong");
+        const { password, ...user } = result.rows[0];
+        const token = jwt.sign(user, "jwtkey");
         return res
           .cookie("access_token", token, {
             httpOnly: true,
           })
           .status(200)
-          .json(result.rows[0]);
+          .json(user);
       }
     );
   });

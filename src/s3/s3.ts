@@ -28,6 +28,7 @@ export const uploadFile = (file: Express.Multer.File) => {
 };
 
 export const getFileStream = (fileKey: string) => {
+  console.log(fileKey);
   const downloadParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileKey,

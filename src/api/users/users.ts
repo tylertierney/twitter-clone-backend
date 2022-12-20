@@ -67,12 +67,17 @@ users.put(
       const text = `
       UPDATE users
       SET header_pic = $1
-      WHERE username=$2;`;
+      WHERE username=$2
+      RETURNING *;`;
 
       query(text, [result.Key, req.params.username], (error, data) => {
         if (error) return res.status(400).json(error);
+        if (!data.rows.length)
+          return res.status(400).json("Something went wrong");
 
-        res.status(200).json("Header pic = " + result.Key);
+        const { password, ...user } = data.rows[0];
+
+        res.status(200).json(user);
       });
     } catch (err) {
       res.status(400).json(err);
@@ -94,12 +99,18 @@ users.put(
       const text = `
       UPDATE users
       SET profile_pic = $1
-      WHERE username=$2;`;
+      WHERE username=$2
+      RETURNING *;`;
 
       query(text, [result.Key, req.params.username], (error, data) => {
         if (error) return res.status(400).json(error);
 
-        res.status(200).json("Profile pic = " + result.Key);
+        if (!data.rows.length)
+          return res.status(400).json("Something went wrong");
+
+        const { password, ...user } = data.rows[0];
+
+        res.status(200).json(user);
       });
     } catch (err) {
       res.status(400).json(err);
