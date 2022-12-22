@@ -8,7 +8,7 @@ const PORT = 8080;
 
 app.use(
   cors({
-    origin: "http://localhost:4200",
+    origin: ["http://localhost:4200", "http://192.168.254.32:4200"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })

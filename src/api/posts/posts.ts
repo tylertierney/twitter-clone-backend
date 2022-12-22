@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../../db";
 import { token } from "../../middlewares/token";
+import { getFileStream } from "../../s3/s3";
 import like from "./like/like";
 
 const posts = Router();
@@ -26,7 +27,8 @@ posts.get("/", (req, res, next) => {
 
 posts.get("/:userId/feed", (req, res) => {
   const text = `
-  SELECT date, text, author, username, name, profile_pic, posts.id AS id
+  SELECT date, text, author, username, name, profile_pic, 
+  posts.id AS id, posts.photo_url
   FROM user_following 
 	  JOIN posts ON user_following.following_id=posts.author
     JOIN users ON users.id=posts.author
@@ -49,7 +51,8 @@ posts.get("/:username", (req, res) => {
     const q = `
     SELECT
     name, date, text, username,
-    author AS user_id, profile_pic, posts.id AS id
+    author AS user_id, profile_pic, posts.id AS id,
+    posts.photo_url
     FROM users
     JOIN posts
     ON users.id=posts.author
@@ -97,6 +100,12 @@ posts.get("/:post_id/likes", (req, res) => {
     if (!result.rows.length || !result.rows[0].count) return res.json(error);
     res.send(result.rows[0].count);
   });
+});
+
+posts.get("/:post_id/photo_url/:photo_url", (req, res) => {
+  const key = req.params.photo_url;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
 });
 
 export default posts;
