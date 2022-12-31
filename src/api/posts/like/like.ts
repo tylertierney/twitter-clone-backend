@@ -23,7 +23,6 @@ like.post("/:post_id/:user_id", (req, res) => {
 
       query(q, [post_id, user_id], (err, data) => {
         if (error) return res.status(400).json(error);
-        console.log(data);
         return res.status(200).json(false);
       });
     } else {
@@ -48,7 +47,6 @@ like.post("/:post_id/:user_id", (req, res) => {
 // });
 
 like.get("/:post_id/:user_id", (req, res) => {
-  console.log("get called");
   const text = `
   SELECT * FROM likes
   WHERE post_id=$1
@@ -71,7 +69,6 @@ like.get("/:post_id/count", (req, res) => {
   WHERE post_id=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    console.log(result);
     res.send(result);
   });
 });

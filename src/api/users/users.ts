@@ -2,12 +2,12 @@ import { NextFunction, Router, Request, Response } from "express";
 import jwt, { verify, VerifyCallback, VerifyErrors } from "jsonwebtoken";
 import { query } from "../../db";
 import multer from "multer";
+const upload = multer({ dest: "uploads/" });
 import { getFileStream, uploadFile } from "../../s3/s3";
 import fs from "fs";
 import util from "util";
 import { token } from "../../middlewares/token";
 const unlinkFile = util.promisify(fs.unlink);
-const upload = multer({ dest: "uploads/" });
 
 const users = Router();
 
@@ -30,6 +30,34 @@ users.get("/", (req, res) => {
   };
 
   jwt.verify(token, "jwtkey", callback);
+});
+
+users.get("/:username/posts", (req, res) => {
+  const text = `
+  SELECT * FROM users
+  WHERE username=$1;`;
+  query(text, [req.params.username], (error, result) => {
+    if (error) return res.status(404).json(error);
+
+    const q = `
+    SELECT
+    name, date, text, username,
+    author AS user_id, profile_pic, posts.id AS id,
+    posts.photo_url, replying_to
+    FROM users
+    JOIN posts
+    ON users.id=posts.author
+    AND users.id=$1
+    ORDER BY date DESC;`;
+
+    if (!result.rows.length)
+      return res.status(404).json("something went wrong");
+    query(q, [result.rows[0].id], (err, data) => {
+      if (err) return res.status(404).json(err);
+
+      res.status(200).send(data.rows);
+    });
+  });
 });
 
 users.get("/:username", (req, res, next) => {

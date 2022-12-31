@@ -3,6 +3,12 @@ import { query } from "../../db";
 import { token } from "../../middlewares/token";
 import { getFileStream } from "../../s3/s3";
 import like from "./like/like";
+import multer from "multer";
+const upload = multer({ dest: "uploads/" });
+import { uploadFile } from "../../s3/s3";
+import util from "util";
+import fs from "fs";
+const unlinkFile = util.promisify(fs.unlink);
 
 const posts = Router();
 
@@ -28,7 +34,7 @@ posts.get("/", (req, res, next) => {
 posts.get("/:userId/feed", (req, res) => {
   const text = `
   SELECT date, text, author, username, name, profile_pic, 
-  posts.id AS id, posts.photo_url
+  posts.id AS id, posts.photo_url, posts.replying_to
   FROM user_following 
 	  JOIN posts ON user_following.following_id=posts.author
     JOIN users ON users.id=posts.author
@@ -41,46 +47,87 @@ posts.get("/:userId/feed", (req, res) => {
   });
 });
 
-posts.get("/:username", (req, res) => {
-  const text = `
-  SELECT * FROM users
-  WHERE username=$1;`;
-  query(text, [req.params.username], (error, result) => {
-    if (error) return res.status(404).json(error);
+posts.get("/:post_id", (req, res) => {
+  // const text = `SELECT * FROM posts
+  // WHERE id=$1`;
 
-    const q = `
-    SELECT
-    name, date, text, username,
-    author AS user_id, profile_pic, posts.id AS id,
-    posts.photo_url
-    FROM users
+  const text = `
+  SELECT
+  name, date, text, username, posts.photo_url,
+  author, profile_pic, replying_to, posts.id AS id
+  FROM users
     JOIN posts
     ON users.id=posts.author
-    AND users.id=$1
-    ORDER BY date DESC;`;
+  WHERE posts.id=$1;`;
 
+  query(text, [req.params.post_id], (error, result) => {
+    if (error) return res.json(error);
     if (!result.rows.length)
-      return res.status(404).json("something went wrong");
-    query(q, [result.rows[0].id], (err, data) => {
-      if (err) return res.status(404).json(err);
-
-      res.status(200).send(data.rows);
-    });
+      return res.status(400).json("something went wrong");
+    res.send(result.rows[0]);
   });
 });
 
-posts.post("/", (req, res) => {
-  const { author, text } = req.body;
-  console.log(req.body);
-  if (!author || !text) {
-    res.status(400).send({ message: "Please provide some text content" });
-    return;
-  }
-  const str = `
-  INSERT INTO posts (author, text)
-  VALUES ($1, $2)`;
+// posts.post("/", (req, res) => {
+//   const { author, text } = req.body;
+//   if (!author || !text) {
+//     res.status(400).json("Please provide some text content");
+//     return;
+//   }
+//   const str = `
+//   INSERT INTO posts (author, text)
+//   VALUES ($1, $2)`;
 
-  query(str, [author, text], (error, result) => {
+//   query(str, [author, text], (error, result) => {
+//     if (error) {
+//       res.send({ error: error });
+//     } else {
+//       res.send(result.rows);
+//     }
+//   });
+// });
+
+posts.post("/", upload.single("photo_file"), async (req, res) => {
+  console.log(req.body);
+  const { author, text, replying_to } = req.body;
+  if (!author) return res.status(401).json("Something went wrong");
+
+  if (!text) return res.status(400).json("Please provide some text");
+
+  const file = req.file;
+  // if (!req.file) return res.status(400).json("No file");
+  let fileKey: string | null = null;
+
+  if (file) {
+    try {
+      const result = await uploadFile(file);
+      await unlinkFile(file.path);
+      if (result.Key) fileKey = result.Key;
+      // const text = `
+      // UPDATE users
+      // SET header_pic = $1
+      // WHERE username=$2
+      // RETURNING *;`;
+
+      // query(text, [result.Key, req.params.username], (error, data) => {
+      //   if (error) return res.status(400).json(error);
+      //   if (!data.rows.length)
+      //     return res.status(400).json("Something went wrong");
+
+      //   const { password, ...user } = data.rows[0];
+
+      //   res.status(200).json(user);
+      // });
+    } catch (err) {
+      return res.status(400).json(err);
+    }
+  }
+
+  const str = `
+  INSERT INTO posts (author, text, photo_url, replying_to)
+  VALUES ($1, $2, $3, $4)`;
+
+  query(str, [author, text, fileKey, replying_to], (error, result) => {
     if (error) {
       res.send({ error: error });
     } else {
@@ -106,6 +153,18 @@ posts.get("/:post_id/photo_url/:photo_url", (req, res) => {
   const key = req.params.photo_url;
   const readStream = getFileStream(key);
   readStream.pipe(res);
+});
+
+posts.get("/:post_id/reply-count", (req, res) => {
+  const text = `
+  SELECT COUNT(*) FROM posts
+  WHERE replying_to=$1`;
+
+  query(text, [req.params.post_id], (error, result) => {
+    if (error) return res.status(400).json(error);
+    if (!result.rows.length || !result.rows[0].count) return res.json(error);
+    res.send(result.rows[0].count);
+  });
 });
 
 export default posts;
