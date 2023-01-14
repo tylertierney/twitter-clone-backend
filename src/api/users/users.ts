@@ -146,6 +146,30 @@ users.put(
   }
 );
 
+users.put("/:username/nameAndDescription", (req, res) => {
+  console.log(req.body);
+  const { description, name } = req.body;
+
+  if (name.length > 50)
+    res.status(400).json("Name must not exceed 50 characters");
+  if (description.length > 160)
+    res.status(400).json("Description must not exceed 160 characters");
+
+  const text = `
+  UPDATE users
+  SET description=$1, name=$2
+  WHERE username=$3
+  RETURNING *;`;
+
+  query(text, [description, name, req.params.username], (error, result) => {
+    if (error) return res.json(error);
+    if (!result.rows.length)
+      return res.status(400).json("Something went wrong");
+    const { password, ...user } = result.rows[0];
+    res.status(200).json(user);
+  });
+});
+
 users.get("/:user_id/following", (req, res) => {
   const text = `
   SELECT COUNT(*)

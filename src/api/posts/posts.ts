@@ -68,25 +68,6 @@ posts.get("/:post_id", (req, res) => {
   });
 });
 
-// posts.post("/", (req, res) => {
-//   const { author, text } = req.body;
-//   if (!author || !text) {
-//     res.status(400).json("Please provide some text content");
-//     return;
-//   }
-//   const str = `
-//   INSERT INTO posts (author, text)
-//   VALUES ($1, $2)`;
-
-//   query(str, [author, text], (error, result) => {
-//     if (error) {
-//       res.send({ error: error });
-//     } else {
-//       res.send(result.rows);
-//     }
-//   });
-// });
-
 posts.post("/", upload.single("photo_file"), async (req, res) => {
   console.log(req.body);
   const { author, text, replying_to } = req.body;
@@ -95,7 +76,6 @@ posts.post("/", upload.single("photo_file"), async (req, res) => {
   if (!text) return res.status(400).json("Please provide some text");
 
   const file = req.file;
-  // if (!req.file) return res.status(400).json("No file");
   let fileKey: string | null = null;
 
   if (file) {
@@ -103,21 +83,6 @@ posts.post("/", upload.single("photo_file"), async (req, res) => {
       const result = await uploadFile(file);
       await unlinkFile(file.path);
       if (result.Key) fileKey = result.Key;
-      // const text = `
-      // UPDATE users
-      // SET header_pic = $1
-      // WHERE username=$2
-      // RETURNING *;`;
-
-      // query(text, [result.Key, req.params.username], (error, data) => {
-      //   if (error) return res.status(400).json(error);
-      //   if (!data.rows.length)
-      //     return res.status(400).json("Something went wrong");
-
-      //   const { password, ...user } = data.rows[0];
-
-      //   res.status(200).json(user);
-      // });
     } catch (err) {
       return res.status(400).json(err);
     }
