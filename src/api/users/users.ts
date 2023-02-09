@@ -76,6 +76,9 @@ users.get("/:username/header_pic/:header_pic", (req, res) => {
 });
 
 users.get("/:username/profile_pic/:profile_pic", (req, res) => {
+  // if (req.params.profile_pic) {
+  //   console.log(req.params.profile_pic);
+  // }
   const key = req.params.profile_pic;
   const readStream = getFileStream(key);
   readStream.pipe(res);
@@ -147,7 +150,7 @@ users.put(
 );
 
 users.put("/:username/nameAndDescription", (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   const { description, name } = req.body;
 
   if (name.length > 50)

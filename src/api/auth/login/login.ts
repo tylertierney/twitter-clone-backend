@@ -27,6 +27,9 @@ login.post("/", (req, res) => {
     res
       .cookie("access_token", token, {
         httpOnly: true,
+        // sameSite: "none",
+        // secure: true,
+        // domain: "https://192.168.254.32:4200",
       })
       .status(200)
       .json(user);
