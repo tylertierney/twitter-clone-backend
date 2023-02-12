@@ -16,16 +16,38 @@ posts.use(token);
 posts.use("/like", like);
 
 posts.get("/", (req, res, next) => {
+  // const text = `
+  // SELECT
+  // name, date, text, username,
+  // author AS user_id, profile_pic
+  // FROM users
+  //   JOIN posts
+  //   ON users.id=posts.author
+  // ORDER BY date DESC;`;
+
   const text = `
   SELECT
-  name, date, text, username,
-  author AS user_id, profile_pic
-  FROM users
-    JOIN posts
+    date,
+    posts.text,
+    author,
+    username,
+    name,
+    profile_pic,
+    posts.id AS id,
+    posts.photo_url,
+    posts.replying_to,
+    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
+  FROM posts
+  JOIN users
     ON users.id=posts.author
+  LEFT JOIN tags ON posts.id=tags.post_id
+  GROUP BY
+    posts.id,
+    users.id
   ORDER BY date DESC;`;
 
   query(text, [], (error, result) => {
+    console.log(error);
     if (error) return res.json(error);
     res.send(result.rows);
   });
@@ -72,9 +94,10 @@ posts.get("/:userId/feed", (req, res) => {
     users.id
   ORDER BY date DESC;`;
 
+  if (!req.params.userId) return res.status(200).send([]);
+
   query(text, [req.params.userId], (error, result) => {
     if (error) return res.status(404).json(error);
-    // console.log(result.rows);
     res.send(result.rows);
   });
 });
@@ -82,15 +105,24 @@ posts.get("/:userId/feed", (req, res) => {
 posts.get("/:post_id", (req, res) => {
   const text = `
   SELECT
-  name, date, text, username, posts.photo_url,
-  author, profile_pic, replying_to, posts.id AS id
+    name,
+    date,
+    posts.text,
+    username,
+    posts.photo_url,
+    author,
+    profile_pic,
+    replying_to,
+    posts.id AS id,
+    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
   FROM users
-    JOIN posts
-    ON users.id=posts.author
-  WHERE posts.id=$1;`;
+    JOIN posts ON users.id=posts.author
+    LEFT JOIN tags ON posts.id=tags.post_id
+  WHERE posts.id=$1
+  GROUP BY posts.id, users.id;`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.json(error);
+    if (error) return res.status(401).json(error);
     if (!result.rows.length)
       return res.status(400).json("something went wrong");
     res.send(result.rows[0]);
@@ -98,10 +130,6 @@ posts.get("/:post_id", (req, res) => {
 });
 
 posts.post("/", upload.single("photo_file"), async (req, res) => {
-  // console.log(req.body);
-  // console.log(JSON.parse(req.body.tags));
-  // res.send({ message: "great" });
-
   const { author, text, replying_to } = req.body;
   if (!author) return res.status(401).json("Something went wrong");
 
@@ -174,17 +202,17 @@ posts.get("/:post_id/reply-count", (req, res) => {
   });
 });
 
-posts.get("/:post_id/tags", (req, res) => {
-  const text = `
-  SELECT text FROM tags
-  WHERE post_id=$1`;
+// posts.get("/:post_id/tags", (req, res) => {
+//   const text = `
+//   SELECT text FROM tags
+//   WHERE post_id=$1`;
 
-  query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(400).json(error);
-    const asStringArray = result.rows.map((row) => row.text);
-    res.send(asStringArray);
-  });
-});
+//   query(text, [req.params.post_id], (error, result) => {
+//     if (error) return res.status(400).json(error);
+//     const asStringArray = result.rows.map((row) => row.text);
+//     res.send(asStringArray);
+//   });
+// });
 
 posts.get("/:post_id/replies", (req, res) => {
   const text = `
@@ -204,17 +232,10 @@ posts.delete("/:post_id", (req, res) => {
   DELETE FROM posts
   WHERE id=$1;`;
 
-  console.log("called delete method");
-  console.log(req.params.post_id);
-
   query(text, [req.params.post_id], (error, result) => {
     if (error) return res.status(400).json(error);
-    console.log(result.rows);
     res.send(result.rows);
   });
 });
-
-// ALTER TABLE likes DROP CONSTRAINT likes_post_id_fkey, ADD CONSTRAINT likes_post_id_fkey FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE;
-// ALTER TABLE posts DROP CONSTRAINT replying_to, ADD CONSTRAINT replying_to FOREIGN KEY (replying_to) REFERENCES posts(id) NOT VALID ON DELETE CASCADE;
 
 export default posts;

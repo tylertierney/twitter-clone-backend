@@ -20,7 +20,9 @@ users.get("/", (req, res) => {
   const callback: VerifyCallback = (err, data) => {
     if (err) return res.status(403).json("Token not valid");
 
-    const text = "SELECT * FROM users";
+    const text = `
+    SELECT * FROM users
+    ORDER BY created_at DESC;`;
     query(text, [], (error, result) => {
       if (error) return res.json(error);
       if (result.rows.length) {
@@ -71,17 +73,22 @@ users.get("/:username", (req, res, next) => {
 
 users.get("/:username/header_pic/:header_pic", (req, res) => {
   const key = req.params.header_pic;
-  const readStream = getFileStream(key);
-  readStream.pipe(res);
+
+  getFileStream(key)
+    .on("error", (err) => {
+      console.log(err);
+    })
+    .pipe(res);
 });
 
 users.get("/:username/profile_pic/:profile_pic", (req, res) => {
-  // if (req.params.profile_pic) {
-  //   console.log(req.params.profile_pic);
-  // }
   const key = req.params.profile_pic;
-  const readStream = getFileStream(key);
-  readStream.pipe(res);
+
+  getFileStream(key)
+    .on("error", (err) => {
+      console.log(err);
+    })
+    .pipe(res);
 });
 
 users.put(
