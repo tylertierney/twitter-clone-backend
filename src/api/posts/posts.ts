@@ -47,7 +47,6 @@ posts.get("/", (req, res, next) => {
   ORDER BY date DESC;`;
 
   query(text, [], (error, result) => {
-    console.log(error);
     if (error) return res.json(error);
     res.send(result.rows);
   });

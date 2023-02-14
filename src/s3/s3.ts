@@ -7,15 +7,6 @@ const s3 = new S3({
   secretAccessKey: process.env.AWS_SECRET_KEY,
 });
 
-// export const bucketParams = {
-//   Bucket: "twitter-clone-1",
-//   // Specify the name of the new object. For example, 'index.html'.
-//   // To create a directory for the object, use '/'. For example, 'myApp/package.json'.
-//   Key: "someNewBucketObjectKey",
-//   // Content of the new object.
-//   Body: "BODY",
-// };
-
 export const uploadFile = (file: Express.Multer.File) => {
   const fileStream = fs.createReadStream(file.path);
   const uploadParams = {
@@ -33,6 +24,5 @@ export const getFileStream = (fileKey: string) => {
     Key: fileKey,
   };
 
-  // console.log(s3.getObject(downloadParams));
   return s3.getObject(downloadParams).createReadStream();
 };
