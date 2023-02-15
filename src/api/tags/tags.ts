@@ -20,7 +20,7 @@ tags.get("/", (req, res) => {
   LIMIT 10;`;
 
   query(text, [], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });

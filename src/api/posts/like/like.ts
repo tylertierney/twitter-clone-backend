@@ -13,7 +13,7 @@ like.post("/:post_id/:user_id", (req, res) => {
   AND user_id=$2;`;
 
   query(text, [post_id, user_id], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
 
     if (result.rows.length) {
       const q = `
@@ -22,8 +22,8 @@ like.post("/:post_id/:user_id", (req, res) => {
       AND user_id=$2;`;
 
       query(q, [post_id, user_id], (err, data) => {
-        if (error) return res.status(400).json(error);
-        return res.status(200).json(false);
+        if (error) res.status(400).json(error);
+        res.status(200).json(false);
       });
     } else {
       const q = `
@@ -31,7 +31,7 @@ like.post("/:post_id/:user_id", (req, res) => {
       VALUES ($1, $2);`;
 
       query(q, [post_id, user_id], (err, data) => {
-        if (error) return res.status(400).json(error);
+        if (error) res.status(400).json(error);
         return res.status(200).json(true);
       });
     }

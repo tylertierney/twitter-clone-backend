@@ -1,5 +1,5 @@
 import fs from "fs";
-import S3 from "aws-sdk/clients/s3";
+import S3, { PutObjectRequest } from "aws-sdk/clients/s3";
 
 const s3 = new S3({
   region: process.env.AWS_BUCKET_REGION,
@@ -9,9 +9,9 @@ const s3 = new S3({
 
 export const uploadFile = (file: Express.Multer.File) => {
   const fileStream = fs.createReadStream(file.path);
-  const uploadParams = {
+  const uploadParams: PutObjectRequest = {
     Body: fileStream,
-    Bucket: process.env.AWS_BUCKET_NAME,
+    Bucket: process.env.AWS_BUCKET_NAME ?? "",
     Key: file.filename,
   };
 
@@ -19,8 +19,8 @@ export const uploadFile = (file: Express.Multer.File) => {
 };
 
 export const getFileStream = (fileKey: string) => {
-  const downloadParams = {
-    Bucket: process.env.AWS_BUCKET_NAME,
+  const downloadParams: PutObjectRequest = {
+    Bucket: process.env.AWS_BUCKET_NAME ?? "",
     Key: fileKey,
   };
 

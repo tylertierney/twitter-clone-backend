@@ -9,11 +9,9 @@ login.post("/", (req, res) => {
   const text = `SELECT * FROM users WHERE email = $1`;
 
   query(text, [req.body.email], (error, result) => {
-    if (error) return res.json(error);
+    if (error) res.json(error);
     if (!result.rows.length)
-      return res
-        .status(404)
-        .json("A user was not found with that email address.");
+      res.status(404).json("A user was not found with that email address.");
 
     const { password, ...user } = result.rows[0];
 
@@ -22,14 +20,11 @@ login.post("/", (req, res) => {
       result.rows[0].password
     );
 
-    if (!passwordCorrect) return res.status(401).json("Incorrect password");
+    if (!passwordCorrect) res.status(401).json("Incorrect password");
     const token = jwt.sign(user, "jwtkey");
     res
       .cookie("access_token", token, {
         httpOnly: true,
-        // sameSite: "none",
-        // secure: true,
-        // domain: "https://192.168.254.32:4200",
       })
       .status(200)
       .json(user);

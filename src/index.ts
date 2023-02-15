@@ -2,9 +2,6 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import api from "./api/api";
 import cookieParser from "cookie-parser";
-import https from "https";
-import fs from "fs";
-import path from "path";
 
 const app = express();
 const PORT = 8080;
@@ -41,4 +38,4 @@ app.listen(PORT, () => {
 //   app
 // );
 
-// sslServer.listen(3000, () => console.log("Secure server on port 3000"));
+// sslServer.listen(PORT, () => console.log(`Secure server on port ${PORT}`));

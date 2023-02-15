@@ -47,7 +47,7 @@ posts.get("/", (req, res, next) => {
   ORDER BY date DESC;`;
 
   query(text, [], (error, result) => {
-    if (error) return res.json(error);
+    if (error) res.json(error);
     res.send(result.rows);
   });
 });
@@ -93,10 +93,10 @@ posts.get("/:userId/feed", (req, res) => {
     users.id
   ORDER BY date DESC;`;
 
-  if (!req.params.userId) return res.status(200).send([]);
+  if (!req.params.userId) res.status(200).send([]);
 
   query(text, [req.params.userId], (error, result) => {
-    if (error) return res.status(404).json(error);
+    if (error) res.status(404).json(error);
     res.send(result.rows);
   });
 });
@@ -121,18 +121,17 @@ posts.get("/:post_id", (req, res) => {
   GROUP BY posts.id, users.id;`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(401).json(error);
-    if (!result.rows.length)
-      return res.status(400).json("something went wrong");
+    if (error) res.status(401).json(error);
+    if (!result.rows.length) res.status(400).json("something went wrong");
     res.send(result.rows[0]);
   });
 });
 
 posts.post("/", upload.single("photo_file"), async (req, res) => {
   const { author, text, replying_to } = req.body;
-  if (!author) return res.status(401).json("Something went wrong");
+  if (!author) res.status(401).json("Something went wrong");
 
-  if (!text) return res.status(400).json("Please provide some text");
+  if (!text) res.status(400).json("Please provide some text");
 
   const file = req.file;
   let fileKey: string | null = null;
@@ -143,7 +142,7 @@ posts.post("/", upload.single("photo_file"), async (req, res) => {
       await unlinkFile(file.path);
       if (result.Key) fileKey = result.Key;
     } catch (err) {
-      return res.status(400).json(err);
+      res.status(400).json(err);
     }
   }
 
@@ -177,8 +176,8 @@ posts.get("/:post_id/likes", (req, res) => {
   WHERE post_id=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(400).json(error);
-    if (!result.rows.length || !result.rows[0].count) return res.json(error);
+    if (error) res.status(400).json(error);
+    if (!result.rows.length || !result.rows[0].count) res.json(error);
     res.send(result.rows[0].count);
   });
 });
@@ -195,8 +194,8 @@ posts.get("/:post_id/reply-count", (req, res) => {
   WHERE replying_to=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(400).json(error);
-    if (!result.rows.length || !result.rows[0].count) return res.json(error);
+    if (error) res.status(400).json(error);
+    if (!result.rows.length || !result.rows[0].count) res.json(error);
     res.send(result.rows[0].count);
   });
 });
@@ -221,7 +220,7 @@ posts.get("/:post_id/replies", (req, res) => {
   WHERE replying_to=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });
@@ -232,7 +231,7 @@ posts.delete("/:post_id", (req, res) => {
   WHERE id=$1;`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });

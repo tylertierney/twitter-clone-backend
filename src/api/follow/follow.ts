@@ -16,7 +16,7 @@ follow.post("/:user_id/:following_id", (req, res) => {
       text,
       [req.params.user_id, req.params.following_id],
       (error, result) => {
-        if (error) return res.status(400).json("You already follow that user.");
+        if (error) res.status(400).json("You already follow that user.");
 
         res.status(200).json("User followed!");
       }
@@ -30,7 +30,7 @@ follow.post("/:user_id/:following_id", (req, res) => {
       text,
       [req.params.user_id, req.params.following_id],
       (error, result) => {
-        if (error) return res.status(400).json("You don't follow that user.");
+        if (error) res.status(400).json("You don't follow that user.");
 
         res.status(200).json("User unfollowed");
       }
@@ -48,7 +48,7 @@ follow.get("/:user_id/:following_id", (req, res) => {
     [req.params.user_id, req.params.following_id],
     (error, result) => {
       if (error) {
-        return res.status(200).json(error);
+        res.status(200).json(error);
       }
 
       if (!result.rowCount) {

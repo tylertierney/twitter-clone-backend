@@ -6,19 +6,19 @@ interface ITreeNode {
   children: ITreeNode[];
 }
 
-function TreeNode(
-  id: string,
-  text: string,
-  replying_to: string,
-  username: string
-): ITreeNode {
-  this.id = id;
-  this.text = text;
-  this.replying_to = replying_to;
-  this.username = username;
-  this.children = [];
+class TreeNode {
+  id: string;
+  text: string;
+  replying_to: string;
+  username: string;
+  constructor(id: string, text: string, replying_to: string, username: string) {
+    this.id = id;
+    this.text = text;
+    this.replying_to = replying_to;
+    this.username = username;
+  }
 
-  return this;
+  children: TreeNode[] = [];
 }
 
 interface IPost {
@@ -56,7 +56,7 @@ export const createTree = (rows: IPost[]) => {
     for (const child of children) {
       if (!visited.has(child)) {
         const childAsNum = parseInt(child, 10);
-        const node = TreeNode(
+        const node = new TreeNode(
           rows[childAsNum].id,
           rows[childAsNum].text,
           rows[childAsNum].replying_to,
@@ -72,7 +72,7 @@ export const createTree = (rows: IPost[]) => {
   for (const parent of Object.keys(adjList)) {
     if (!visited.has(parent)) {
       const parentAsNum = parseInt(parent, 10);
-      const node = TreeNode(
+      const node = new TreeNode(
         rows[parentAsNum].id,
         rows[parentAsNum].text,
         rows[parentAsNum].replying_to,

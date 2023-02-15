@@ -14,7 +14,7 @@ search.get("/users", (req: Request, res: Response) => {
   OR LOWER(name) LIKE LOWER($1);`;
 
   query(text, [req.query.q + "%"], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });
@@ -36,7 +36,7 @@ search.get("/posts", (req: Request, res: Response) => {
   WHERE LOWER(text) LIKE LOWER($1);`;
 
   query(text, [req.query.q + "%"], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });
@@ -47,7 +47,7 @@ search.get("/tags", (req: Request, res: Response) => {
   WHERE LOWER(text) LIKE LOWER($1);`;
 
   query(text, [req.query.q + "%"], (error, result) => {
-    if (error) return res.status(400).json(error);
+    if (error) res.status(400).json(error);
     res.send(result.rows);
   });
 });
