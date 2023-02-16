@@ -57,6 +57,10 @@ auth.post("/register", (req, res) => {
         if (error) {
           return res.json(error);
         }
+        if (!result)
+          return res
+            .status(400)
+            .json({ message: "Unable to connect to SQL client" });
         if (!result.rows.length) return res.json("Something went wrong");
         const { password, ...user } = result.rows[0];
         const token = jwt.sign(user, "jwtkey");
@@ -80,7 +84,9 @@ auth.post("/check-username-available", (req, res) => {
   WHERE users.username = $1;`;
 
   query(text, [req.body.username], (error, result) => {
-    if (error) res.status(400).send("Error during username lookup.");
+    if (error) res.status(400).send(error);
+    if (!result)
+      res.status(400).json({ message: "Unable to connect to SQL client" });
     if (result.rows.length) res.status(200).send({ isAvailable: false });
     res.status(200).send({ isAvailable: true });
   });
@@ -94,7 +100,9 @@ auth.post("/check-email-available", (req, res) => {
   WHERE users.email = $1;`;
 
   query(text, [req.body.email], (error, result) => {
-    if (error) res.status(400).send("Error during account lookup.");
+    if (error) res.status(400).send(error);
+    if (!result)
+      res.status(400).json({ message: "Unable to connect to SQL client" });
     if (result.rows.length) res.status(200).send({ isAvailable: false });
     res.status(200).send({ isAvailable: true });
   });
