@@ -33,7 +33,7 @@ login.post("/", (req, res) => {
         httpOnly: true,
       })
       .status(200)
-      .json(user);
+      .send(user);
   });
 });
 
