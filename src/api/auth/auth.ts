@@ -12,15 +12,17 @@ auth.use("/login", login);
 
 auth.get("/", (req, res) => {
   const token = req.cookies.access_token;
-  if (!token) res.status(200).json(false);
+  if (!token) {
+    res.status(200).json(false);
+  } else {
+    jwt.verify(token, "jwtkey", (err: VerifyErrors | null) => {
+      if (err) res.json(false);
 
-  jwt.verify(token, "jwtkey", (err: VerifyErrors | null) => {
-    if (err) res.status(200).json(false);
+      const decoded = jwt.decode(token, { json: true });
 
-    const decoded = jwt.decode(token, { json: true });
-
-    res.status(200).send(decoded);
-  });
+      res.send(decoded);
+    });
+  }
 });
 
 auth.post("/register", (req, res) => {
