@@ -12,16 +12,30 @@ auth.use("/login", login);
 
 auth.get("/", (req, res) => {
   const token = req.cookies.access_token;
+  // if (!token) {
+  //   return res.status(200).json(false);
+  // } else {
+  //   jwt.verify(token, "jwtkey", (err: VerifyErrors | null) => {
+  //     if (err) res.json(false);
+
+  //     const decoded = jwt.decode(token, { json: true });
+
+  //     res.send(decoded);
+  //   });
+  // }
   if (!token) {
-    res.status(200).json(false);
+    return res.status(200).json(false);
   } else {
-    jwt.verify(token, "jwtkey", (err: VerifyErrors | null) => {
-      if (err) res.json(false);
-
-      const decoded = jwt.decode(token, { json: true });
-
-      res.send(decoded);
-    });
+    try {
+      const data = jwt.verify(token, "jwtkey");
+      if (data) {
+        const decoded = jwt.decode(token, { json: true });
+        return res.send(decoded);
+      }
+    } catch {
+      return res.status(401).json("Unauthorized");
+    }
+    return res.status(401).json("Unauthorized");
   }
 });
 
