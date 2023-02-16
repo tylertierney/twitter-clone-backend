@@ -13,6 +13,7 @@ app.use(
       "https://localhost:4200",
       "http://192.168.254.32:4200",
       "https://192.168.254.32:4200",
+      "https://playful-meerkat-6d44db.netlify.app",
     ],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
