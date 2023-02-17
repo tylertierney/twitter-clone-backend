@@ -14,24 +14,15 @@ const users = Router();
 users.use(token);
 
 users.get("/", (req, res) => {
-  const token = req.cookies.access_token;
-  if (!token) res.status(401).json("Not authenticated");
-
-  const callback: VerifyCallback = (err, data) => {
-    if (err) res.status(403).json("Token not valid");
-
-    const text = `
+  const text = `
     SELECT * FROM users
     ORDER BY created_at DESC;`;
-    query(text, [], (error, result) => {
-      if (error) res.json(error);
-      if (result.rows.length) {
-        res.send(result.rows);
-      }
-    });
-  };
-
-  jwt.verify(token, "jwtkey", callback);
+  query(text, [], (error, result) => {
+    if (error) res.status(400).send(error);
+    if (result.rows.length) {
+      res.send(result.rows);
+    }
+  });
 });
 
 users.get("/:username/posts", (req, res) => {

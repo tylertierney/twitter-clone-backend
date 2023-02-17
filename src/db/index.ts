@@ -9,8 +9,6 @@ const pool = new Pool({
   port: parseInt(process.env["PGPORT"] ?? "", 10),
 });
 
-console.log("port = " + parseInt(process.env["PGPORT"] ?? "", 10));
-
 export const query = (
   text: string,
   params: any[],

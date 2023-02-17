@@ -11,23 +11,13 @@ auth.use("/logout", logout);
 auth.use("/login", login);
 
 auth.get("/", (req, res) => {
+  console.log("auth route hit");
   const token = req.cookies.access_token;
-  // if (!token) {
-  //   return res.status(200).json(false);
-  // } else {
-  //   jwt.verify(token, "jwtkey", (err: VerifyErrors | null) => {
-  //     if (err) res.json(false);
-
-  //     const decoded = jwt.decode(token, { json: true });
-
-  //     res.send(decoded);
-  //   });
-  // }
   if (!token) {
     return res.status(200).json(false);
   } else {
     try {
-      const data = jwt.verify(token, "jwtkey");
+      const data = jwt.verify(token, process.env["JWTKEY"] ?? "");
       if (data) {
         const decoded = jwt.decode(token, { json: true });
         return res.send(decoded);
@@ -77,7 +67,7 @@ auth.post("/register", (req, res) => {
             .json({ message: "Unable to connect to SQL client" });
         if (!result.rows.length) return res.json("Something went wrong");
         const { password, ...user } = result.rows[0];
-        const token = jwt.sign(user, "jwtkey");
+        const token = jwt.sign(user, process.env["JWTKEY"] ?? "");
         return res
           .cookie("access_token", token, {
             httpOnly: true,

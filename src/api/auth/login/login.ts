@@ -28,13 +28,12 @@ login.post("/", (req, res) => {
 
     if (!passwordCorrect)
       return res.status(401).send({ message: "Incorrect password" });
-    const token = jwt.sign(user, "jwtkey");
+    const token = jwt.sign(user, process.env["JWTKEY"] ?? "");
     return res
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
-        domain: "playful-meerkat-6d44db.netlify.app",
       })
       .status(200)
       .send(user);
