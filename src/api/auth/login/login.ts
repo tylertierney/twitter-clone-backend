@@ -34,7 +34,7 @@ login.post("/", (req, res) => {
         httpOnly: true,
         sameSite: "none",
         secure: true,
-        domain: "https://playful-meerkat-6d44db.netlify.app",
+        domain: "playful-meerkat-6d44db.netlify.app",
       })
       .status(200)
       .send(user);
