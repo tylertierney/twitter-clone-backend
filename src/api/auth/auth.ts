@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { query } from "../../db";
-import { hashSync, genSaltSync, compareSync } from "bcryptjs";
-import jwt, { VerifyErrors } from "jsonwebtoken";
+import { hashSync, genSaltSync } from "bcryptjs";
+import jwt from "jsonwebtoken";
 import login from "./login/login";
 import logout from "./logout/logout";
 
@@ -11,7 +11,6 @@ auth.use("/logout", logout);
 auth.use("/login", login);
 
 auth.get("/", (req, res) => {
-  console.log("auth route hit");
   const token = req.cookies.access_token;
   if (!token) {
     return res.status(200).json(false);

@@ -29,11 +29,13 @@ login.post("/", (req, res) => {
     if (!passwordCorrect)
       return res.status(401).send({ message: "Incorrect password" });
     const token = jwt.sign(user, process.env["JWTKEY"] ?? "");
+    const oneMonthInMs = 1000 * 86400 * 30;
     return res
       .cookie("access_token", token, {
         httpOnly: true,
         sameSite: "none",
         secure: true,
+        expires: new Date(Date.now() + oneMonthInMs),
       })
       .status(200)
       .send(user);
