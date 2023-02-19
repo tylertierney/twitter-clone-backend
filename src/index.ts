@@ -31,7 +31,6 @@ app.get("/", (request: Request, response: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.log(process.env);
   console.log(`Server started at http://localhost:${PORT}`);
 });
 

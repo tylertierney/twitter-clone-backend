@@ -9,9 +9,17 @@ search.use(token);
 
 search.get("/users", (req: Request, res: Response) => {
   const text = `
-  SELECT name, username, profile_pic FROM users
+  SELECT
+    id,
+    name,
+    username,
+    profile_pic,
+    created_at,
+    description
+  FROM users
   WHERE LOWER(username) LIKE LOWER($1)
-  OR LOWER(name) LIKE LOWER($1);`;
+  OR LOWER(name) LIKE LOWER($1)
+  ORDER BY created_at DESC;`;
 
   query(text, [req.query.q + "%"], (error, result) => {
     if (error) res.status(400).json(error);
@@ -33,7 +41,8 @@ search.get("/posts", (req: Request, res: Response) => {
     posts.replying_to
   FROM posts
   JOIN users ON users.id=posts.author
-  WHERE LOWER(text) LIKE LOWER($1);`;
+  WHERE LOWER(text) LIKE LOWER($1)
+  ORDER BY date DESC;`;
 
   query(text, [req.query.q + "%"], (error, result) => {
     if (error) res.status(400).json(error);

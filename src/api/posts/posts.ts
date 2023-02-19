@@ -16,15 +16,6 @@ posts.use(token);
 posts.use("/like", like);
 
 posts.get("/", (req, res, next) => {
-  // const text = `
-  // SELECT
-  // name, date, text, username,
-  // author AS user_id, profile_pic
-  // FROM users
-  //   JOIN posts
-  //   ON users.id=posts.author
-  // ORDER BY date DESC;`;
-
   const text = `
   SELECT
     date,
@@ -38,17 +29,50 @@ posts.get("/", (req, res, next) => {
     posts.replying_to,
     COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
   FROM posts
-  JOIN users
-    ON users.id=posts.author
-  LEFT JOIN tags ON posts.id=tags.post_id
+    JOIN users
+      ON users.id=posts.author
+    LEFT JOIN tags
+      ON posts.id=tags.post_id
   GROUP BY
     posts.id,
     users.id
   ORDER BY date DESC;`;
 
+  // const text = `
+  // SELECT
+  //   sub.tags,
+  //   date,
+  //   posts.text,
+  //   author,
+  //   username,
+  //   name,
+  //   profile_pic,
+  //   posts.id AS id,
+  //   posts.photo_url,
+  //   posts.replying_to,
+  //   COUNT(likes.post_id) as like_count
+  // FROM (
+  //   SELECT
+  // 	  posts.id,
+  // 	  COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
+  //   FROM posts
+  // 	  LEFT JOIN tags
+  // 	    ON posts.id=tags.post_id
+  //   GROUP BY posts.id
+  //   ORDER BY posts.date DESC
+  // ) sub
+  //   JOIN posts
+  // 	  ON sub.id=posts.id
+  //   LEFT JOIN likes
+  // 	  ON likes.post_id=posts.id
+  //   JOIN users
+  //     ON users.id=posts.author
+  // GROUP BY sub.id, sub.tags, posts.id, users.id
+  // ORDER BY posts.date DESC;`;
+
   query(text, [], (error, result) => {
-    if (error) res.json(error);
-    res.send(result.rows);
+    if (error) return res.json(error);
+    return res.send(result.rows);
   });
 });
 
@@ -92,6 +116,34 @@ posts.get("/:userId/feed", (req, res) => {
     posts.id,
     users.id
   ORDER BY date DESC;`;
+
+  // const text = `
+  // SELECT
+  //   date,
+  //   posts.text,
+  //   author,
+  //   username,
+  //   name,
+  //   profile_pic,
+  //   posts.id AS id,
+  //   posts.photo_url,
+  //   posts.replying_to,
+  //   COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+  //   COUNT(likes.post_id) as like_count
+  // FROM user_following
+  //   JOIN posts
+  //     ON user_following.following_id=posts.author
+  //   LEFT JOIN tags
+  //     ON posts.id=tags.post_id
+  //   JOIN users
+  //     ON users.id=posts.author
+  //   LEFT JOIN likes
+  //     ON likes.post_id=posts.id
+  // WHERE user_following.user_id=$1
+  // GROUP BY
+  //   posts.id,
+  //   users.id
+  // ORDER BY date DESC;`;
 
   if (!req.params.userId) res.status(200).send([]);
 
