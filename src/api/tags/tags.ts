@@ -8,15 +8,15 @@ tags.use(token);
 
 tags.get("/", (req, res) => {
   const text = `
-  SELECT DISTINCT text, ct
+  SELECT DISTINCT text, count
   FROM  (
    SELECT
     text,
     post_id,
-    count(*) OVER (PARTITION BY text) AS ct
+    count(*) OVER (PARTITION BY text) AS count
    FROM tags
   ) sub
-  ORDER BY ct DESC
+  ORDER BY count DESC
   LIMIT 10;`;
 
   query(text, [], (error, result) => {

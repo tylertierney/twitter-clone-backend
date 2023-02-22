@@ -174,7 +174,9 @@ posts.get("/:post_id", (req, res) => {
 
   query(text, [req.params.post_id], (error, result) => {
     if (error) res.status(401).json(error);
-    if (!result.rows.length) res.status(400).json("something went wrong");
+    if (!result || !result.rows)
+      res.status(400).send({ message: "something went wrong" });
+    // if (!result.rows.length) res.status(400).json("something went wrong");
     res.send(result.rows[0]);
   });
 });

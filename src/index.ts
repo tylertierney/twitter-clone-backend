@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import https from "http";
 import fs from "fs";
 import path from "path";
+import util from "util";
 
 const app = express();
 const PORT = 8080;
@@ -30,15 +31,19 @@ app.get("/", (request: Request, response: Response) => {
   response.send({ message: "hello from home" });
 });
 
+//HTTP
 app.listen(PORT, () => {
   console.log(`Server started at http://localhost:${PORT}`);
 });
 
+//HTTPS
+
+// console.log(path.join(__dirname, "cert", "key.pem"));
 // const sslServer = https.createServer(
 //   {
 //     key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
 //     cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
-//   },
+//   } as https.ServerOptions,
 //   app
 // );
 
