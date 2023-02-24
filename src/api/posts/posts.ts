@@ -173,19 +173,18 @@ posts.get("/:post_id", (req, res) => {
   GROUP BY posts.id, users.id;`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) res.status(401).json(error);
+    if (error) return res.status(401).json(error);
     if (!result || !result.rows)
-      res.status(400).send({ message: "something went wrong" });
-    // if (!result.rows.length) res.status(400).json("something went wrong");
-    res.send(result.rows[0]);
+      return res.status(400).send({ message: "something went wrong" });
+    return res.send(result.rows[0]);
   });
 });
 
 posts.post("/", upload.single("photo_file"), async (req, res) => {
   const { author, text, replying_to } = req.body;
-  if (!author) res.status(401).json("Something went wrong");
+  if (!author) res.status(401).send({ message: "Something went wrong" });
 
-  if (!text) res.status(400).json("Please provide some text");
+  if (!text) res.status(400).send({ message: "Please provide some text" });
 
   const file = req.file;
   let fileKey: string | null = null;
@@ -206,20 +205,20 @@ posts.post("/", upload.single("photo_file"), async (req, res) => {
   RETURNING *;`;
 
   query(str, [author, text, fileKey, replying_to], (error, result) => {
-    if (error || !result.rows.length) {
-      res.send({ error: error });
-    } else {
-      const id = result.rows[0].id;
-      const tags = JSON.parse(req.body.tags);
-      for (const tag of tags) {
-        const tagQuery = `
+    if (error) return res.status(400).send(error);
+    if (!result)
+      return res.status(400).send({ message: "Something went wrong" });
+
+    const id = result.rows[0].id;
+    const tags = JSON.parse(req.body.tags);
+    for (const tag of tags) {
+      const tagQuery = `
         INSERT INTO tags (text, post_id)
         VALUES ($1, $2);`;
 
-        query(tagQuery, [tag, id], (err, data) => {});
-      }
-      res.send(result.rows);
+      query(tagQuery, [tag, id], (err, data) => {});
     }
+    return res.send(result.rows);
   });
 });
 
@@ -230,9 +229,12 @@ posts.get("/:post_id/likes", (req, res) => {
   WHERE post_id=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) res.status(400).json(error);
-    if (!result.rows.length || !result.rows[0].count) res.json(error);
-    res.send(result.rows[0].count);
+    if (error) return res.status(400).send(error);
+    if (!result)
+      return res.status(400).send({ message: "Something went wrong" });
+    if (!result.rows.length || !result.rows[0].count)
+      return res.status(400).send({ message: "Something went wrong" });
+    return res.send(result.rows[0].count);
   });
 });
 
@@ -274,8 +276,10 @@ posts.get("/:post_id/replies", (req, res) => {
   WHERE replying_to=$1`;
 
   query(text, [req.params.post_id], (error, result) => {
-    if (error) res.status(400).json(error);
-    res.send(result.rows);
+    if (error) return res.status(400).json(error);
+    if (!result)
+      return res.status(400).send({ message: "Something went wrong" });
+    return res.send(result.rows);
   });
 });
 

@@ -25,4 +25,36 @@ tags.get("/", (req, res) => {
   });
 });
 
+tags.get("/:tag", (req, res) => {
+  const text = `
+  SELECT * FROM (SELECT
+    date,
+    posts.text,
+    author,
+    username,
+    name,
+    profile_pic,
+    posts.id AS id,
+    posts.photo_url,
+    posts.replying_to,
+    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
+  FROM posts
+    JOIN users
+      ON users.id=posts.author
+    LEFT JOIN tags
+      ON posts.id=tags.post_id
+  GROUP BY
+    posts.id,
+    users.id
+  ORDER BY date DESC) sub
+  WHERE $1=ANY(tags);`;
+
+  query(text, [req.params.tag], (error, result) => {
+    if (error || !result)
+      return res.status(400).send({ message: "Something went wrong" });
+    // return res.send({ posts: result.rows, count: result.rowCount });
+    return res.send(result.rows);
+  });
+});
+
 export default tags;
