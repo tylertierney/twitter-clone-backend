@@ -52,12 +52,22 @@ search.get("/posts", (req: Request, res: Response) => {
 
 search.get("/tags", (req: Request, res: Response) => {
   const text = `
-  SELECT DISTINCT text FROM tags
-  WHERE LOWER(text) LIKE LOWER($1);`;
+  SELECT DISTINCT text, count
+  FROM  (
+   SELECT
+    text,
+    post_id,
+    count(*) OVER (PARTITION BY text) AS count
+   FROM tags
+  ) sub
+  WHERE LOWER(text) LIKE LOWER ($1)
+  ORDER BY count DESC;`;
 
   query(text, [req.query.q + "%"], (error, result) => {
-    if (error) res.status(400).json(error);
-    res.send(result.rows);
+    if (error) return res.status(400).json(error);
+    if (!result || !result.rows)
+      return res.status(400).send({ message: "Something went wrong" });
+    return res.send(result.rows);
   });
 });
 

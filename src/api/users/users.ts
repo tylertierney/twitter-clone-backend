@@ -152,10 +152,14 @@ users.put("/:username/nameAndDescription", (req, res) => {
   // console.log(req.body);
   const { description, name } = req.body;
 
+  if (!name) res.status(400).send({ message: "You have to have a name" });
+
   if (name.length > 50)
-    res.status(400).json("Name must not exceed 50 characters");
+    res.status(400).send({ message: "Name must not exceed 50 characters" });
   if (description.length > 160)
-    res.status(400).json("Description must not exceed 160 characters");
+    res
+      .status(400)
+      .send({ message: "Description must not exceed 160 characters" });
 
   const text = `
   UPDATE users
@@ -165,7 +169,8 @@ users.put("/:username/nameAndDescription", (req, res) => {
 
   query(text, [description, name, req.params.username], (error, result) => {
     if (error) res.json(error);
-    if (!result.rows.length) res.status(400).json("Something went wrong");
+    if (!result.rows.length)
+      res.status(400).send({ message: "Something went wrong" });
     const { password, ...user } = result.rows[0];
     res.status(200).json(user);
   });
