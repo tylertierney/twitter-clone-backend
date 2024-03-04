@@ -94,10 +94,10 @@ users.put(
         await unlinkFile(file.path);
 
         const text = `
-      UPDATE users
-      SET header_pic = $1
-      WHERE username=$2
-      RETURNING *;`;
+          UPDATE users
+          SET header_pic = $1
+          WHERE username=$2
+          RETURNING *;`;
 
         query(text, [result.Key, req.params.username], (error, data) => {
           if (error) res.status(400).json(error);
@@ -127,10 +127,10 @@ users.put(
         await unlinkFile(file.path);
 
         const text = `
-      UPDATE users
-      SET profile_pic = $1
-      WHERE username=$2
-      RETURNING *;`;
+          UPDATE users
+          SET profile_pic = $1
+          WHERE username=$2
+          RETURNING *;`;
 
         query(text, [result.Key, req.params.username], (error, data) => {
           if (error) res.status(400).json(error);
@@ -149,7 +149,6 @@ users.put(
 );
 
 users.put("/:username/nameAndDescription", (req, res) => {
-  // console.log(req.body);
   const { description, name } = req.body;
 
   if (!name) res.status(400).send({ message: "You have to have a name" });
@@ -162,10 +161,10 @@ users.put("/:username/nameAndDescription", (req, res) => {
       .send({ message: "Description must not exceed 160 characters" });
 
   const text = `
-  UPDATE users
-  SET description=$1, name=$2
-  WHERE username=$3
-  RETURNING *;`;
+    UPDATE users
+    SET description=$1, name=$2
+    WHERE username=$3
+    RETURNING *;`;
 
   query(text, [description, name, req.params.username], (error, result) => {
     if (error) res.json(error);
