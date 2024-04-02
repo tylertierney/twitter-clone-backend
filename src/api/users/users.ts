@@ -1,13 +1,9 @@
-import { NextFunction, Router, Request, Response } from "express";
-import jwt, { verify, VerifyCallback, VerifyErrors } from "jsonwebtoken";
+import { Router, Request, Response } from "express";
 import { query } from "../../db";
 import multer from "multer";
-const upload = multer({ dest: "uploads/" });
-import { getFileStream, uploadFile } from "../../s3/s3";
-import fs from "fs";
-import util from "util";
+const upload = multer();
 import { token } from "../../middlewares/token";
-const unlinkFile = util.promisify(fs.unlink);
+import { getImage, uploadImage } from "../../supabase/supabase";
 
 const users = Router();
 
@@ -27,24 +23,52 @@ users.get("/", (req, res) => {
 
 users.get("/:username/posts", (req, res) => {
   const text = `
-  SELECT * FROM users
-  WHERE username=$1;`;
+    SELECT * FROM users
+    WHERE username=$1;`;
   query(text, [req.params.username], (error, result) => {
     if (error) res.status(404).json(error);
 
     const q = `
     SELECT
-    name, date, text, username,
-    author AS user_id, profile_pic, posts.id AS id,
-    posts.photo_url, replying_to
+      name,
+      date,
+      posts.text,
+      username,
+      author AS user_id,
+      profile_pic,
+      posts.id AS id,
+      posts.photo_url,
+      replying_to,
+      COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
     FROM users
-    JOIN posts
-    ON users.id=posts.author
-    AND users.id=$1
+      JOIN posts ON users.id=posts.author AND users.id=$1
+      LEFT JOIN tags ON posts.id=tags.post_id
+    GROUP BY posts.id, users.id, users.name
     ORDER BY date DESC;`;
+
+    // const q = `
+    // SELECT
+    //   name,
+    //   date,
+    //   posts.text,
+    //   username,
+    //   author AS user_id,
+    //   profile_pic,
+    //   posts.id AS id,
+    //   posts.photo_url,
+    //   replying_to,
+    //   COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+    //   COALESCE(ARRAY_AGG(likes.user_id), '{}') likes
+    // FROM users
+    //   JOIN posts ON users.id=posts.author AND users.id=$1
+    //   LEFT JOIN tags ON posts.id=tags.post_id
+    //   LEFT JOIN likes ON posts.id=likes.post_id
+    // GROUP BY posts.id, users.id, users.name
+    // ORDER BY date DESC;`;
 
     if (!result.rows.length) res.status(404).json("something went wrong");
     query(q, [result.rows[0].id], (err, data) => {
+      console.log(err);
       if (err) res.status(404).json(err);
 
       res.status(200).send(data.rows);
@@ -61,24 +85,14 @@ users.get("/:username", (req, res, next) => {
   });
 });
 
-users.get("/:username/header_pic/:header_pic", (req, res) => {
-  const key = req.params.header_pic;
-
-  getFileStream(key)
-    .on("error", (err) => {
-      console.log(err);
-    })
-    .pipe(res);
+users.get("/:username/header_pic/:header_pic", async (req, res) => {
+  const fileKey = req.params.header_pic;
+  await getImage(fileKey, res);
 });
 
-users.get("/:username/profile_pic/:profile_pic", (req, res) => {
-  const key = req.params.profile_pic;
-
-  getFileStream(key)
-    .on("error", (err) => {
-      console.log(err);
-    })
-    .pipe(res);
+users.get("/:username/profile_pic/:profile_pic", async (req, res) => {
+  const fileKey = req.params.profile_pic;
+  await getImage(fileKey, res);
 });
 
 users.put(
@@ -86,31 +100,35 @@ users.put(
   upload.single("header_pic"),
   async (req: Request, res: Response) => {
     const file = req.file;
-    if (!file) res.status(400).json("No file");
+    if (!file) {
+      return res.status(400).json("No file");
+    }
 
-    if (file) {
-      try {
-        const result = await uploadFile(file);
-        await unlinkFile(file.path);
+    const { data, error } = await uploadImage(file);
 
-        const text = `
+    if (error) {
+      return res.status(500).send(error);
+    }
+
+    if (!data) {
+      return res.status(500).send("Something went wrong");
+    }
+
+    const text = `
           UPDATE users
           SET header_pic = $1
           WHERE username=$2
           RETURNING *;`;
 
-        query(text, [result.Key, req.params.username], (error, data) => {
-          if (error) res.status(400).json(error);
-          if (!data.rows.length) res.status(400).json("Something went wrong");
+    return query(text, [data.path, req.params.username], (error, data) => {
+      if (error) return res.status(400).json(error);
+      if (!data.rows.length)
+        return res.status(400).json("Something went wrong");
 
-          const { password, ...user } = data.rows[0];
+      const { password, ...user } = data.rows[0];
 
-          res.status(200).json(user);
-        });
-      } catch (err) {
-        res.status(400).json(err);
-      }
-    }
+      return res.status(200).json(user);
+    });
   }
 );
 
@@ -119,32 +137,39 @@ users.put(
   upload.single("profile_pic"),
   async (req, res) => {
     const file = req.file;
-    if (!req.file) res.status(400).json("No file");
-
-    if (file) {
-      try {
-        const result = await uploadFile(file);
-        await unlinkFile(file.path);
-
-        const text = `
-          UPDATE users
-          SET profile_pic = $1
-          WHERE username=$2
-          RETURNING *;`;
-
-        query(text, [result.Key, req.params.username], (error, data) => {
-          if (error) res.status(400).json(error);
-
-          if (!data.rows.length) res.status(400).json("Something went wrong");
-
-          const { password, ...user } = data.rows[0];
-
-          res.status(200).json(user);
-        });
-      } catch (err) {
-        res.status(400).json(err);
-      }
+    if (!file) {
+      return res.status(400).json("No file");
     }
+
+    const { data, error } = await uploadImage(file);
+
+    if (error) {
+      return res.status(500).send(error);
+    }
+
+    if (!data) {
+      return res.status(500).send("Something went wrong");
+    }
+
+    const text = `
+        UPDATE users
+        SET profile_pic = $1
+        WHERE username=$2
+        RETURNING *;`;
+
+    console.log(data.path);
+    return query(text, [data.path, req.params.username], (error, data) => {
+      if (error) return res.status(500).json(error);
+
+      if (!data.rows.length)
+        return res.status(500).json("Something went wrong");
+
+      const { password, ...user } = data.rows[0];
+
+      console.log(user);
+
+      return res.status(200).json(user);
+    });
   }
 );
 

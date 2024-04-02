@@ -1,14 +1,10 @@
 import { Router } from "express";
 import { query } from "../../db";
 import { token } from "../../middlewares/token";
-import { getFileStream } from "../../s3/s3";
 import like from "./like/like";
 import multer from "multer";
-const upload = multer({ dest: "uploads/" });
-import { uploadFile } from "../../s3/s3";
-import util from "util";
-import fs from "fs";
-const unlinkFile = util.promisify(fs.unlink);
+const upload = multer();
+import { getImage, uploadImage } from "../../supabase/supabase";
 
 const posts = Router();
 
@@ -182,20 +178,20 @@ posts.get("/:post_id", (req, res) => {
 
 posts.post("/", upload.single("photo_file"), async (req, res) => {
   const { author, text, replying_to } = req.body;
-  if (!author) res.status(401).send({ message: "Something went wrong" });
+  if (!author) return res.status(401).send({ message: "Something went wrong" });
 
-  if (!text) res.status(400).send({ message: "Please provide some text" });
+  if (!text)
+    return res.status(400).send({ message: "Please provide some text" });
 
   const file = req.file;
   let fileKey: string | null = null;
 
   if (file) {
-    try {
-      const result = await uploadFile(file);
-      await unlinkFile(file.path);
-      if (result.Key) fileKey = result.Key;
-    } catch (err) {
-      res.status(400).json(err);
+    const { data, error } = await uploadImage(file);
+    if (error) {
+      return res.status(500).json(error);
+    } else if (data) {
+      fileKey = data.path;
     }
   }
 
@@ -204,7 +200,7 @@ posts.post("/", upload.single("photo_file"), async (req, res) => {
   VALUES ($1, $2, $3, $4)
   RETURNING *;`;
 
-  query(str, [author, text, fileKey, replying_to], (error, result) => {
+  return query(str, [author, text, fileKey, replying_to], (error, result) => {
     if (error) return res.status(400).send(error);
     if (!result)
       return res.status(400).send({ message: "Something went wrong" });
@@ -238,10 +234,9 @@ posts.get("/:post_id/likes", (req, res) => {
   });
 });
 
-posts.get("/:post_id/photo_url/:photo_url", (req, res) => {
-  const key = req.params.photo_url;
-  const readStream = getFileStream(key);
-  readStream.pipe(res);
+posts.get("/:post_id/photo_url/:photo_url", async (req, res) => {
+  const fileKey = req.params.photo_url;
+  await getImage(fileKey, res);
 });
 
 posts.get("/:post_id/reply-count", (req, res) => {
