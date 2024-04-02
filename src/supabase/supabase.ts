@@ -26,7 +26,7 @@ export const getImage = async (fileKey: string, res: Response) => {
   }
 
   if (data) {
-    res.setHeader("Content-Type", data?.type);
+    res.setHeader("Content-Type", data.type);
     data.arrayBuffer().then((buffer) => {
       const buff = Buffer.from(buffer);
       res.write(buff, "binary");
