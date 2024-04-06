@@ -68,7 +68,6 @@ users.get("/:username/posts", (req, res) => {
 
     if (!result.rows.length) res.status(404).json("something went wrong");
     query(q, [result.rows[0].id], (err, data) => {
-      console.log(err);
       if (err) res.status(404).json(err);
 
       res.status(200).send(data.rows);
@@ -157,7 +156,6 @@ users.put(
         WHERE username=$2
         RETURNING *;`;
 
-    console.log(data.path);
     return query(text, [data.path, req.params.username], (error, data) => {
       if (error) return res.status(500).json(error);
 
@@ -165,8 +163,6 @@ users.put(
         return res.status(500).json("Something went wrong");
 
       const { password, ...user } = data.rows[0];
-
-      console.log(user);
 
       return res.status(200).json(user);
     });
