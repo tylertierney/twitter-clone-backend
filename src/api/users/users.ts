@@ -224,4 +224,20 @@ users.get("/:user_id/followers", (req, res) => {
   });
 });
 
+users.delete("/:user_id", (req, res) => {
+  const text = `
+    DELETE FROM users
+    WHERE id=$1
+    RETURNING *;
+  `;
+
+  query(text, [req.params.user_id], (error, result) => {
+    if (error) return res.json(error);
+    if (!result.rows.length) {
+      return res.status(500).json("Something went wrong");
+    }
+    return res.send(result.rows[0]);
+  });
+});
+
 export default users;
