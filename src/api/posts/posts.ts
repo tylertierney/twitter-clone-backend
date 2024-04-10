@@ -30,10 +30,8 @@ posts.get("/", (req, res, next) => {
       COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
       COALESCE(reply_counts.replies_count, 0) AS reply_count
     FROM posts
-      JOIN users
-        ON users.id=posts.author
-      LEFT JOIN tags
-        ON posts.id=tags.post_id
+      JOIN users ON users.id=posts.author
+      LEFT JOIN tags ON posts.id=tags.post_id
       LEFT JOIN likes ON posts.id = likes.post_id
       LEFT JOIN (
         SELECT replying_to, COUNT(*)::int as replies_count
@@ -46,7 +44,7 @@ posts.get("/", (req, res, next) => {
       reply_count
     ORDER BY date DESC;`;
 
-  query(text, [], (error, result) => {
+  return query(text, [], (error, result) => {
     if (error) {
       return res.status(500).json(error);
     }
@@ -54,24 +52,6 @@ posts.get("/", (req, res, next) => {
   });
 });
 
-// posts.get("/:userId/feed", (req, res) => {
-//   const text = `
-//   SELECT date, text, author, username, name, profile_pic,
-//   posts.id AS id, posts.photo_url, posts.replying_to
-//   FROM user_following
-// 	  JOIN posts ON user_following.following_id=posts.author
-//     JOIN users ON users.id=posts.author
-//   WHERE user_id=$1
-//   ORDER BY date DESC;`;
-
-//   query(text, [req.params.userId], (error, result) => {
-//     if (error) return res.status(404).json(error);
-
-//     res.send(result.rows);
-//   });
-// });
-
-// NEW STUFF
 posts.get("/:userId/feed", (req, res) => {
   const text = `
   SELECT
@@ -84,50 +64,33 @@ posts.get("/:userId/feed", (req, res) => {
     posts.id AS id,
     posts.photo_url,
     posts.replying_to,
-    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
+    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+    COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
+      COALESCE(reply_counts.replies_count, 0) AS reply_count
   FROM user_following
     JOIN posts ON user_following.following_id=posts.author
-    LEFT JOIN tags ON posts.id=tags.post_id
     JOIN users ON users.id=posts.author
-  WHERE user_id=$1
+    LEFT JOIN tags ON posts.id=tags.post_id
+    LEFT JOIN likes ON posts.id = likes.post_id
+    LEFT JOIN (
+      SELECT replying_to, COUNT(*)::int as replies_count
+      FROM posts
+      GROUP BY posts.id
+    ) reply_counts ON posts.id=reply_counts.replying_to
+  WHERE user_following.user_id=$1
   GROUP BY
     posts.id,
-    users.id
+    users.id,
+    reply_count
   ORDER BY date DESC;`;
 
-  // const text = `
-  // SELECT
-  //   date,
-  //   posts.text,
-  //   author,
-  //   username,
-  //   name,
-  //   profile_pic,
-  //   posts.id AS id,
-  //   posts.photo_url,
-  //   posts.replying_to,
-  //   COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-  //   COUNT(likes.post_id) as like_count
-  // FROM user_following
-  //   JOIN posts
-  //     ON user_following.following_id=posts.author
-  //   LEFT JOIN tags
-  //     ON posts.id=tags.post_id
-  //   JOIN users
-  //     ON users.id=posts.author
-  //   LEFT JOIN likes
-  //     ON likes.post_id=posts.id
-  // WHERE user_following.user_id=$1
-  // GROUP BY
-  //   posts.id,
-  //   users.id
-  // ORDER BY date DESC;`;
+  if (!req.params.userId) return res.status(200).send([]);
 
-  if (!req.params.userId) res.status(200).send([]);
-
-  query(text, [req.params.userId], (error, result) => {
-    if (error) res.status(404).json(error);
-    res.send(result.rows);
+  return query(text, [req.params.userId], (error, result) => {
+    if (error) {
+      return res.status(404).json(error);
+    }
+    return res.send(result.rows);
   });
 });
 
