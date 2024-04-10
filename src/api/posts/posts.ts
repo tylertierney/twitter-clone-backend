@@ -12,6 +12,9 @@ posts.use(token);
 posts.use("/like", like);
 
 posts.get("/", (req, res, next) => {
+  console.log(req.headers.USERNAME);
+  console.log(req.headers.USER_ID);
+
   const text = `
     SELECT
       date,
