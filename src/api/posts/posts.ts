@@ -13,61 +13,38 @@ posts.use("/like", like);
 
 posts.get("/", (req, res, next) => {
   const text = `
-  SELECT
-    date,
-    posts.text,
-    author,
-    username,
-    name,
-    profile_pic,
-    posts.id AS id,
-    posts.photo_url,
-    posts.replying_to,
-    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
-  FROM posts
-    JOIN users
-      ON users.id=posts.author
-    LEFT JOIN tags
-      ON posts.id=tags.post_id
-  GROUP BY
-    posts.id,
-    users.id
-  ORDER BY date DESC;`;
-
-  // const text = `
-  // SELECT
-  //   sub.tags,
-  //   date,
-  //   posts.text,
-  //   author,
-  //   username,
-  //   name,
-  //   profile_pic,
-  //   posts.id AS id,
-  //   posts.photo_url,
-  //   posts.replying_to,
-  //   COUNT(likes.post_id) as like_count
-  // FROM (
-  //   SELECT
-  // 	  posts.id,
-  // 	  COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
-  //   FROM posts
-  // 	  LEFT JOIN tags
-  // 	    ON posts.id=tags.post_id
-  //   GROUP BY posts.id
-  //   ORDER BY posts.date DESC
-  // ) sub
-  //   JOIN posts
-  // 	  ON sub.id=posts.id
-  //   LEFT JOIN likes
-  // 	  ON likes.post_id=posts.id
-  //   JOIN users
-  //     ON users.id=posts.author
-  // GROUP BY sub.id, sub.tags, posts.id, users.id
-  // ORDER BY posts.date DESC;`;
+    SELECT
+      date,
+      posts.text,
+      author,
+      username,
+      name,
+      profile_pic,
+      posts.id AS id,
+      posts.photo_url,
+      posts.replying_to,
+      COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+      COALESCE(likes_count, 0) likes_count
+    FROM posts
+      JOIN users
+        ON users.id=posts.author
+      LEFT JOIN tags
+        ON posts.id=tags.post_id
+    LEFT JOIN (
+      SELECT post_id, COUNT(*)::int as likes_count
+      FROM likes
+      GROUP BY post_id
+    ) AS like_counts ON posts.id = like_counts.post_id
+    GROUP BY
+      posts.id,
+      users.id,
+      likes_count
+    ORDER BY date DESC;`;
 
   query(text, [], (error, result) => {
-    if (error) return res.json(error);
+    if (error) {
+      return res.status(500).json(error);
+    }
     return res.send(result.rows);
   });
 });
