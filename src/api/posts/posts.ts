@@ -27,21 +27,16 @@ posts.get("/", (req, res, next) => {
       posts.photo_url,
       posts.replying_to,
       COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-      COALESCE(likes_count, 0) likes_count
+      COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes
     FROM posts
       JOIN users
         ON users.id=posts.author
       LEFT JOIN tags
         ON posts.id=tags.post_id
-    LEFT JOIN (
-      SELECT post_id, COUNT(*)::int as likes_count
-      FROM likes
-      GROUP BY post_id
-    ) AS like_counts ON posts.id = like_counts.post_id
+      LEFT JOIN likes ON posts.id = likes.post_id
     GROUP BY
       posts.id,
-      users.id,
-      likes_count
+      users.id
     ORDER BY date DESC;`;
 
   query(text, [], (error, result) => {
