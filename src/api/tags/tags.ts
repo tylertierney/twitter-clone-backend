@@ -19,9 +19,9 @@ tags.get("/", (req, res) => {
   ORDER BY count DESC
   LIMIT 10;`;
 
-  query(text, [], (error, result) => {
-    if (error) res.status(400).json(error);
-    res.send(result.rows);
+  return query(text, [], (error, result) => {
+    if (error) return res.status(400).json(error);
+    return res.send(result?.rows);
   });
 });
 

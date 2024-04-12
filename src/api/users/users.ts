@@ -13,11 +13,12 @@ users.get("/", (req, res) => {
   const text = `
     SELECT * FROM users
     ORDER BY created_at DESC;`;
-  query(text, [], (error, result) => {
-    if (error) res.status(400).send(error);
-    if (result.rows.length) {
-      res.send(result.rows);
+  return query(text, [], (error, result) => {
+    if (error) return res.status(400).send(error);
+    if (result?.rows) {
+      return res.send(result.rows);
     }
+    return res.send(result);
   });
 });
 
