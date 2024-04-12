@@ -105,6 +105,20 @@ auth.post("/register", (req, res) => {
     if (error) return res.json(error);
     if (result.rows.length) return res.status(409).send("User already exists");
 
+    const profilePics = [
+      "coral",
+      "bluejeans",
+      "aeroblue",
+      "pastelpink",
+      "lightblue",
+      "lightgreen",
+      "mediumslateblue",
+      "deepskyblue",
+      "plum",
+    ];
+
+    const profile_pic = profilePics[~~(Math.random() * profilePics.length)];
+
     const salt = genSaltSync(10);
     const hash = hashSync(req.body.password, salt);
 
@@ -116,13 +130,7 @@ auth.post("/register", (req, res) => {
 
     return query(
       queryText,
-      [
-        req.body.name,
-        req.body.username,
-        req.body.email,
-        hash,
-        req.body.profile_pic,
-      ],
+      [req.body.name, req.body.username, req.body.email, hash, profile_pic],
       (error, result) => {
         if (error) {
           return res.status(500).json(error);

@@ -23,7 +23,7 @@ posts.get("/", (req, res, next) => {
       posts.id AS id,
       posts.photo_url,
       posts.replying_to,
-      COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+      COALESCE(ARRAY_AGG(DISTINCT tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
       COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
       COALESCE(reply_counts.replies_count, 0) AS reply_count
     FROM posts
@@ -103,7 +103,7 @@ posts.get("/:post_id", (req, res) => {
       posts.id AS id,
       posts.photo_url,
       posts.replying_to,
-      COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
+      COALESCE(ARRAY_AGG(DISTINCT tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
       COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
       COALESCE(reply_counts.replies_count, 0) AS reply_count
     FROM posts
