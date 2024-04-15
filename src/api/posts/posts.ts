@@ -13,33 +13,8 @@ posts.use("/like", like);
 
 posts.get("/", (req, res, next) => {
   const text = `
-    SELECT
-      date,
-      posts.text,
-      author,
-      username,
-      name,
-      profile_pic,
-      posts.id AS id,
-      posts.photo_url,
-      posts.replying_to,
-      COALESCE(ARRAY_AGG(DISTINCT tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-      COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
-      COALESCE(reply_counts.replies_count, 0) AS reply_count
-    FROM posts
-      JOIN users ON users.id=posts.author
-      LEFT JOIN tags ON posts.id=tags.post_id
-      LEFT JOIN likes ON posts.id = likes.post_id
-      LEFT JOIN (
-        SELECT replying_to, COUNT(*)::int as replies_count
-        FROM posts
-        GROUP BY posts.id
-      ) reply_counts ON posts.id=reply_counts.replying_to
-    GROUP BY
-      posts.id,
-      users.id,
-      reply_count
-    ORDER BY date DESC;`;
+    SELECT * FROM posts_view;
+  `;
 
   return query(text, [], (error, result) => {
     if (error) {
@@ -51,35 +26,9 @@ posts.get("/", (req, res, next) => {
 
 posts.get("/:userId/feed", (req, res) => {
   const text = `
-  SELECT
-    date,
-    posts.text,
-    author,
-    username,
-    name,
-    profile_pic,
-    posts.id AS id,
-    posts.photo_url,
-    posts.replying_to,
-    COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-    COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
-      COALESCE(reply_counts.replies_count, 0) AS reply_count
-  FROM user_following
-    JOIN posts ON user_following.following_id=posts.author
-    JOIN users ON users.id=posts.author
-    LEFT JOIN tags ON posts.id=tags.post_id
-    LEFT JOIN likes ON posts.id = likes.post_id
-    LEFT JOIN (
-      SELECT replying_to, COUNT(*)::int as replies_count
-      FROM posts
-      GROUP BY posts.id
-    ) reply_counts ON posts.id=reply_counts.replying_to
-  WHERE user_following.user_id=$1
-  GROUP BY
-    posts.id,
-    users.id,
-    reply_count
-  ORDER BY date DESC;`;
+    SELECT * FROM posts_view WHERE author IN
+      (SELECT following_id FROM user_following WHERE user_id=$1);
+  `;
 
   if (!req.params.userId) return res.status(200).send([]);
 
@@ -93,34 +42,9 @@ posts.get("/:userId/feed", (req, res) => {
 
 posts.get("/:post_id", (req, res) => {
   const text = `
-    SELECT
-      date,
-      posts.text,
-      author,
-      username,
-      name,
-      profile_pic,
-      posts.id AS id,
-      posts.photo_url,
-      posts.replying_to,
-      COALESCE(ARRAY_AGG(DISTINCT tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-      COALESCE(ARRAY_AGG(DISTINCT likes.user_id) FILTER (WHERE likes.user_id IS NOT NULL), '{}') likes,
-      COALESCE(reply_counts.replies_count, 0) AS reply_count
-    FROM posts
-      JOIN users ON users.id=posts.author
-      LEFT JOIN tags ON posts.id=tags.post_id
-      LEFT JOIN likes ON posts.id = likes.post_id
-      LEFT JOIN (
-        SELECT replying_to, COUNT(*)::int as replies_count
-        FROM posts
-        GROUP BY posts.id
-      ) reply_counts ON posts.id=reply_counts.replying_to
-    WHERE posts.id=$1
-    GROUP BY
-      posts.id,
-      users.id,
-      reply_count
-    ORDER BY date DESC;`;
+    SELECT * FROM posts_view
+    WHERE id=$1;
+  `;
 
   query(text, [req.params.post_id], (error, result) => {
     if (error) return res.status(401).json(error);
@@ -219,10 +143,9 @@ posts.get("/:post_id/reply-count", (req, res) => {
 
 posts.get("/:post_id/replies", (req, res) => {
   const text = `
-  SELECT date, text, author, username, name, profile_pic,
-  posts.id AS id, posts.photo_url, posts.replying_to FROM posts
-  JOIN users ON users.id=posts.author
-  WHERE replying_to=$1`;
+    SELECT * FROM posts_view
+    WHERE replying_to=$1;
+  `;
 
   query(text, [req.params.post_id], (error, result) => {
     if (error) return res.status(400).json(error);
