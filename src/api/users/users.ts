@@ -24,55 +24,15 @@ users.get("/", (req, res) => {
 
 users.get("/:username/posts", (req, res) => {
   const text = `
-    SELECT * FROM users
-    WHERE username=$1;`;
-  query(text, [req.params.username], (error, result) => {
-    if (error) res.status(404).json(error);
+    SELECT * FROM posts_view
+    WHERE username=$1
+    ORDER BY date DESC;
+  `;
 
-    const q = `
-    SELECT
-      name,
-      date,
-      posts.text,
-      username,
-      author AS user_id,
-      profile_pic,
-      posts.id AS id,
-      posts.photo_url,
-      replying_to,
-      COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags
-    FROM users
-      JOIN posts ON users.id=posts.author AND users.id=$1
-      LEFT JOIN tags ON posts.id=tags.post_id
-    GROUP BY posts.id, users.id, users.name
-    ORDER BY date DESC;`;
-
-    // const q = `
-    // SELECT
-    //   name,
-    //   date,
-    //   posts.text,
-    //   username,
-    //   author AS user_id,
-    //   profile_pic,
-    //   posts.id AS id,
-    //   posts.photo_url,
-    //   replying_to,
-    //   COALESCE(ARRAY_AGG(tags.text) FILTER (WHERE tags.text IS NOT NULL), '{}') tags,
-    //   COALESCE(ARRAY_AGG(likes.user_id), '{}') likes
-    // FROM users
-    //   JOIN posts ON users.id=posts.author AND users.id=$1
-    //   LEFT JOIN tags ON posts.id=tags.post_id
-    //   LEFT JOIN likes ON posts.id=likes.post_id
-    // GROUP BY posts.id, users.id, users.name
-    // ORDER BY date DESC;`;
-
-    if (!result.rows.length) res.status(404).json("something went wrong");
-    query(q, [result.rows[0].id], (err, data) => {
-      if (err) res.status(404).json(err);
-
-      res.status(200).send(data.rows);
-    });
+  return query(text, [req.params.username], (error, result) => {
+    if (error) return res.status(500).json(error);
+    if (!result.rows) return res.status(500).send("Something went wrong");
+    return res.send(result.rows);
   });
 });
 
@@ -197,31 +157,33 @@ users.put("/:username/nameAndDescription", (req, res) => {
   });
 });
 
-users.get("/:user_id/following", (req, res) => {
+users.get("/:username/following", (req, res) => {
   const text = `
-  SELECT COUNT(*)
-  FROM user_following
-  WHERE user_id=$1;`;
+    SELECT u.username, u.name, u.description, u.profile_pic, u.id FROM users u
+    JOIN user_following uf ON u.id=uf.following_id
+    JOIN users u2 ON u2.id=uf.user_id
+    WHERE u2.username=$1;
+  `;
 
-  query(text, [req.params.user_id], (error, result) => {
-    if (error) res.json(error);
-    if (!result.rows.length || !result.rows[0].count)
-      res.status(400).json("Something went wrong");
-    res.send(result.rows[0].count);
+  return query(text, [req.params.username], (error, result) => {
+    if (error) return res.status(500).json(error);
+    if (!result?.rows) return res.status(500).send("Something went wrong");
+    return res.send(result.rows);
   });
 });
 
-users.get("/:user_id/followers", (req, res) => {
+users.get("/:username/followers", (req, res) => {
   const text = `
-  SELECT COUNT(*)
-  FROM user_following
-  WHERE following_id=$1;`;
+    SELECT u.username, u.name, u.description, u.profile_pic, u.id FROM users u
+    JOIN user_following uf ON u.id=uf.user_id
+    JOIN users u2 ON u2.id=uf.following_id
+    WHERE u2.username=$1;
+  `;
 
-  query(text, [req.params.user_id], (error, result) => {
-    if (error) res.json(error);
-    if (!result.rows.length || !result.rows[0].count)
-      res.status(400).json("Something went wrong");
-    res.send(result.rows[0].count);
+  return query(text, [req.params.username], (error, result) => {
+    if (error) return res.status(500).json(error);
+    if (!result?.rows) return res.status(500).send("Something went wrong");
+    return res.send(result.rows);
   });
 });
 
