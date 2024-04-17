@@ -32,7 +32,7 @@ app.get("/", (request: Request, response: Response) => {
 });
 
 //HTTP
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server started at http://localhost:${PORT}`);
 });
 
