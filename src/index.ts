@@ -8,7 +8,7 @@ import path from "path";
 import util from "util";
 
 const app = express();
-const PORT = 8080;
+const PORT = (process.env["PORT"] as number | undefined) || 8080;
 
 app.use(
   cors({
